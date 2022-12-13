@@ -3,7 +3,6 @@ import shutil
 import click
 import os
 import pandas as pd
-import subprocess
 from account import Account, get_all_accounts, create_account, \
     get_account, delete_account, reset_and_import, create_account_csv, get_all_accounts_to_export
 from tabulate import tabulate

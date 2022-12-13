@@ -1,4 +1,6 @@
 import os
+
+import click
 import sqlalchemy as db
 from sqlalchemy import Integer, String, Column, MetaData
 from sqlalchemy.ext.declarative import declarative_base
@@ -62,6 +64,7 @@ def create_account(name: str, email: str) -> list[list[Column]] | bool:
                 return [[result.id, result.name, result.email, dec]]
             return False
         except SQLAlchemyError as e:
+            click.echo(e.args[0])
             return False
 
 
