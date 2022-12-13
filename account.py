@@ -8,7 +8,6 @@ from gen import generate_password
 from cripto import Crypt
 
 APP_PATH = os.path.dirname(__file__)
-
 engine = db.create_engine(f"sqlite:///{os.path.join(APP_PATH, 'pwd-buddy.db')}")
 connection = engine.connect()
 Base = declarative_base(metadata=MetaData(engine))
@@ -80,6 +79,18 @@ def get_all_accounts() -> list[list[Column]] | bool:
             return False
 
 
+def get_all_accounts_to_export() -> list[list[Column]] | bool:
+    with Session(engine) as session:
+        try:
+            results = session.query(Account).all()
+            data = []
+            for index, result in enumerate(results):
+                data.append([result.id, result.name, result.email, result.password])
+            return data
+        except SQLAlchemyError:
+            return False
+
+
 def get_account(name: str) -> list[list[Column]] | bool:
     crypto = Crypt(APP_PATH)
     with Session(engine) as session:
@@ -90,7 +101,8 @@ def get_account(name: str) -> list[list[Column]] | bool:
                 dec = crypto.decrypt_text(str(result.password))
                 data.append([result.id, result.name, result.email, dec])
             return data
-        except SQLAlchemyError:
+        except SQLAlchemyError as e:
+            print(e.args)
             return False
 
 

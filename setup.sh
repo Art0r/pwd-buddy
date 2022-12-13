@@ -8,5 +8,11 @@ then
 fi
 
 sudo -u root mkdir $APP_PATH
-pyinstaller --onefile --windowed main.py --name pwd-buddy
-sudo -u root cp ./dist/pwd-buddy /usr/local/bin/pwd-buddy
+chmod u+x account.py
+python - << EOF
+from account import reset_and_import
+reset_and_import()
+EOF
+pyinstaller --windowed --add-data "pwd-buddy.db:." main.py --name pwd-buddy
+sudo -u root cp -r ./dist/pwd-buddy /usr/local/bin
+sudo -u root chmod -R 777 /usr/local/bin/pwd-buddy

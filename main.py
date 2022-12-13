@@ -5,7 +5,7 @@ import os
 import pandas as pd
 import subprocess
 from account import Account, get_all_accounts, create_account, \
-    get_account, delete_account, reset_and_import, create_account_csv
+    get_account, delete_account, reset_and_import, create_account_csv, get_all_accounts_to_export
 from tabulate import tabulate
 
 # sqlite-utils db.db "select * from accounts"
@@ -77,14 +77,16 @@ def export(path: str):
     path = os.path.join('/home/arthurfernandes', path)
 
     if os.path.isdir(path):
-        process = subprocess.Popen(["sqlite-utils", "pwd-buddy.db", "select * from accounts", "--csv"],
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        result = process.communicate()
+        columns = [column.key for column in Account.__table__.columns]
+        accounts = get_all_accounts_to_export()
         shutil.copy(os.path.join(app_path, 'secret.key'), os.path.join(path, 'secret.key'))
         with open(os.path.join(path, 'accounts.csv'), 'w') as file:
-            file.write(result[0])
+            file.write(','.join(columns))
+            for acc in accounts:
+                file.write('\n{}'.format(','.join(
+                    str(field) for field in acc))
+                )
             file.close()
-
         return
 
     click.echo("O caminho é inválido")
