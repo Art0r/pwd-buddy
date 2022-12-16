@@ -124,7 +124,7 @@ def delete_account(name: str, email: str) -> list[list[Column]] | bool:
             return False
 
 
-def reset_and_import() -> None:
+def reset_all() -> None:
     if not engine.dialect.has_table(connection, 'accounts'):
         Account.metadata.create_all()
         return
