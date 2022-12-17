@@ -9,6 +9,7 @@ from tabulate import tabulate
 from prompt_toolkit.styles import Style
 from prompt_toolkit import HTML, print_formatted_text
 from yaspin import yaspin
+from cryptography.fernet import Fernet
 
 
 style_ok = Style.from_dict({
@@ -103,9 +104,11 @@ def delete(name: str, email: str):
 
 
 @account.command()
+@click.option('-p', '--path', help='Pasta para onde os segredos serão movidos',
+              required=True, type=str, default="Documentos")
 @click.option('-uf', '--upload_folder', help='Url da pasta no drive para onde será feito o upload',
               required=True, type=str)
-def export(upload_folder: str):
+def export(path: str, upload_folder: str):
     spinner = yaspin(text='Exportando...', color='cyan')
     spinner.start()
 
@@ -117,14 +120,35 @@ def export(upload_folder: str):
             u"<b>></b> <msg>Erro</msg> <sub-msg>Erro ao buscar contas</sub-msg>"
         ), style=style_fail)
         return
-    with open('accounts.csv', 'w') as file:
-        file.write(','.join(columns))
+    output = ""
+    key = Fernet.generate_key()
+    f = Fernet(key)
+    with open('accounts.txt', 'wb') as file:
+        output += ','.join(columns)
         for acc in accounts:
-            file.write('\n{}'.format(','.join(
-                str(field) for field in acc))
-            )
+            output += '\n{}'.format(','.join(str(field) for field in acc))
+        enc = f.encrypt(output.encode('latin1'))
+        file.write(enc)
         file.close()
     result = delete_all_then_upload(upload_folder)
+    os.remove('accounts.txt')
+    with open('secret_file.key', 'wb') as file:
+        file.write(key)
+        file.close()
+    try:
+        shutil.move(
+            os.path.join(os.path.dirname(__file__), 'secret.key'),
+            os.path.join(os.path.join(os.path.expanduser('~'), path, 'secret.key'))
+        )
+        shutil.move(
+            os.path.join(os.path.dirname(__file__), 'secret_file.key'),
+            os.path.join(os.path.join(os.path.expanduser('~'), path, 'secret_file.key'))
+        )
+    except Exception as e:
+        spinner.stop()
+        print_formatted_text(HTML(
+            u"<b>></b> <msg>Erro</msg> <sub-msg>Caminho inválido: {}</sub-msg>".format(e.args[1])
+        ), style=style_fail)
     if result:
         spinner.stop()
         print_formatted_text(HTML(
@@ -138,20 +162,52 @@ def export(upload_folder: str):
 
 
 @account.command()
+@click.option('-p', '--path', help='Pasta para onde os segredos serão movidos',
+              required=True, type=str, default="Documentos")
 @click.option('-df', '--download_folder', help='Url da pasta no drive da onde será feito o download',
               required=True, type=str)
-def importcsv(download_folder: str):
+def importcsv(path: str, download_folder: str):
     spinner = yaspin(text='Importando...', color='cyan')
     spinner.start()
     app_path = os.path.dirname(__file__)
 
     reset_all()
     download(download_folder)
-    data = pd.read_csv(os.path.join(app_path, 'accounts.csv'))
-    for d in data.values:
-        create_account_csv(name=d[1], email=d[2], password=d[3])
-    spinner.stop()
-    return
+    try:
+        shutil.move(
+            os.path.join(os.path.join(os.path.expanduser('~'), path, 'secret.key')),
+            os.path.join(os.path.dirname(__file__), 'secret.key')
+        )
+        shutil.move(
+            os.path.join(os.path.join(os.path.expanduser('~'), path, 'secret_file.key')),
+            os.path.join(os.path.dirname(__file__), 'secret_file.key')
+        )
+
+        txt = open('accounts.txt', 'rb').read()
+        secret_file = open('secret_file.key', 'rb').read()
+        f = Fernet(secret_file)
+        dec = f.decrypt(txt)
+        with open('accounts.csv', 'w') as file:
+            file.write(dec.decode('latin1'))
+            file.close()
+        data = pd.read_csv(os.path.join(app_path, 'accounts.csv'))
+        for d in data.values:
+            create_account_csv(name=d[1], email=d[2], password=d[3])
+
+    except Exception as e:
+        spinner.stop()
+        print_formatted_text(HTML(
+            u"<b>></b> <msg>Erro</msg> <sub-msg>Erro ao importar: {}</sub-msg>".format(e.args[1])
+        ), style=style_fail)
+    finally:
+        spinner.stop()
+        os.remove('accounts.txt')
+        os.remove('accounts.csv')
+
+
+@account.command()
+def reset():
+    reset_all()
 
 
 if __name__ == "__main__":

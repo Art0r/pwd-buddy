@@ -17,7 +17,7 @@ def delete_all_then_upload(upload_folder: str) -> bool:
         except:
             continue
 
-    upload_file_list = ['accounts.csv', 'secret.key']
+    upload_file_list = ['accounts.txt']
 
     try:
         for upload_file in upload_file_list:

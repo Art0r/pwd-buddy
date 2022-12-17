@@ -24,10 +24,10 @@ class Crypt:
         self.key = key
 
     def __gen_key(self) -> None:
-        with open(self.KEY_PATH, 'wb') as file:
-            key = Fernet.generate_key()
-            file.write(key)
-            file.close()
+        file = open(self.KEY_PATH, 'wb')
+        key = Fernet.generate_key()
+        file.write(key)
+        file.close()
 
     def encrypt_text(self, text: str) -> str:
         f = Fernet(self.key)
