@@ -1,41 +1,99 @@
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from pydrive.files import FileNotUploadedError
+from dropbox import DropboxOAuth2FlowNoRedirect
+from dropbox.exceptions import ApiError, AuthError
+from prompt_toolkit.styles import Style
+from prompt_toolkit import HTML, print_formatted_text
+from functools import wraps
+import dropbox
 import shutil
 import os
 
+from yaspin import yaspin
 
-def delete_all_then_upload(upload_folder: str) -> bool:
-    gauth = GoogleAuth()
-    drive = GoogleDrive(gauth)
+style_ok = Style.from_dict({
+    'msg': '#50FC00 bold',
+    'sub-msg': '#C3FFA7 italic'
+})
 
-    file_list = drive.ListFile(
-        {'q': "'{}' in parents and trashed=false".format('1K5RD4yJVid4zOl090E6lJHEws_tNpYVV')}).GetList()
-    for file in file_list:
+style_fail = Style.from_dict({
+    'msg': '#FF0000 bold',
+    'sub-msg': '#FE8787 italic'
+})
+
+class AuthCloud:
+    _APP_KEY: str
+    _APP_SECRET: str
+    _ACCESS_TOKEM: str
+
+    def __init__(self, f):
+        self._APP_KEY = "5zkrhpwo6bug4bl"
+        self._APP_SECRET = "20uqxx3b9bv4ogv"
+        self.f = f
+
+    def __call__(self, *args, **kwargs):
+        auth_flow = DropboxOAuth2FlowNoRedirect(self._APP_KEY, self._APP_SECRET)
+        authorize_url = auth_flow.start()
+        print("1. Go to: " + authorize_url)
+        print("2. Click \"Allow\" (you might have to log in first).")
+        print("3. Copy the authorization code.")
+        auth_code = input("Enter the authorization code here: ").strip()
         try:
-            gauth.service.files().delete(fileId=file['id']).execute()
+            oauth_result = auth_flow.finish(auth_code)
+            self._ACCESS_TOKEN = oauth_result.access_token
+
+        except AuthError as e:
+            print('Error: %s' % (e,))
+            exit(1)
+
+        return self.f(self, access_token=self._ACCESS_TOKEN)
+
+
+class ManageCloud:
+    def __init__(self):
+        pass
+
+    @AuthCloud
+    def delete_all_then_upload(self, access_token: str):
+        dbx = dropbox.Dropbox(oauth2_access_token=access_token)
+        # dbx.users_get_current_account()
+        # print("Successfully set up client!")
+
+        try:
+            dbx.files_delete_v2('/accounts.txt')
         except:
-            continue
-
-    upload_file_list = ['accounts.txt']
-
-    try:
-        for upload_file in upload_file_list:
-            gfile = drive.CreateFile({'parents': [{'id': upload_folder}]})
-            gfile.SetContentFile(upload_file)
-            gfile.Upload()
-        return True
-    except FileNotUploadedError as e:
-        return False
+            try:
+                spinner = yaspin(text='Exportando...', color='cyan')
+                spinner.start()
+                txt = open('./accounts.txt', 'rb').read()
+                dbx.files_upload(txt, '/accounts.txt')
+                spinner.stop()
+                return True
+            except ApiError as e:
+                print(e.args[1])
+                return False
 
 
-def download(download_folder: str):
-    gauth = GoogleAuth()
-    drive = GoogleDrive(gauth)
+    @AuthCloud
+    def download_file(self, access_token: str):
+        dbx = dropbox.Dropbox(oauth2_access_token=access_token)
+        spinner = yaspin(text='Importando...', color='cyan')
+        spinner.start()
+        try:
+            metadata, res = dbx.files_download('/accounts.txt')
+            if not res.content:
+                spinner.stop()
+                print_formatted_text(HTML(
+                    u"<b>></b> <msg>Erro</msg> <sub-msg>Erro fazer o download</sub-msg>"
+                ), style=style_fail)
+            else:
+                file = open('accounts.txt', 'wb')
+                file.write(res.content)
+                spinner.stop()
+        except ApiError as e:
+            spinner.stop()
+            print_formatted_text(HTML(
+                u"<b>></b> <msg>Erro</msg> <sub-msg>Erro ao importar: {}</sub-msg>".format(e.args[1])
+            ), style=style_fail)
 
-    file_list = drive.ListFile(
-        {'q': "'{}' in parents and trashed=false".format(download_folder)}).GetList()
-
-    for i, file in enumerate(sorted(file_list, key=lambda x: x['title']), start=1):
-        print('Downloading {} file from GDrive ({}/{})'.format(file['title'], i, len(file_list)))
-        file.GetContentFile(file['title'])

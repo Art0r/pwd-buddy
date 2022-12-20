@@ -2,7 +2,7 @@ import shutil
 import click
 import os
 import pandas as pd
-from drive import delete_all_then_upload, download
+from drive import ManageCloud
 from account import Account, get_all_accounts, create_account, \
     get_account, delete_account, reset_all, create_account_csv, get_all_accounts_to_export
 from tabulate import tabulate
@@ -109,13 +109,9 @@ def delete(name: str, email: str):
 @click.option('-uf', '--upload_folder', help='Url da pasta no drive para onde será feito o upload',
               required=True, type=str)
 def export(path: str, upload_folder: str):
-    spinner = yaspin(text='Exportando...', color='cyan')
-    spinner.start()
-
     columns = [column.key for column in Account.__table__.columns]
     accounts = get_all_accounts_to_export()
     if not accounts:
-        spinner.stop()
         print_formatted_text(HTML(
             u"<b>></b> <msg>Erro</msg> <sub-msg>Erro ao buscar contas</sub-msg>"
         ), style=style_fail)
@@ -130,7 +126,8 @@ def export(path: str, upload_folder: str):
         enc = f.encrypt(output.encode('latin1'))
         file.write(enc)
         file.close()
-    result = delete_all_then_upload(upload_folder)
+    manage = ManageCloud()
+    result = manage.delete_all_then_upload()
     os.remove('accounts.txt')
     with open('secret_file.key', 'wb') as file:
         file.write(key)
@@ -145,17 +142,14 @@ def export(path: str, upload_folder: str):
             os.path.join(os.path.join(os.path.expanduser('~'), path, 'secret_file.key'))
         )
     except Exception as e:
-        spinner.stop()
         print_formatted_text(HTML(
             u"<b>></b> <msg>Erro</msg> <sub-msg>Caminho inválido: {}</sub-msg>".format(e.args[1])
         ), style=style_fail)
     if result:
-        spinner.stop()
         print_formatted_text(HTML(
             u"<b>></b> <msg>OK</msg> <sub-msg>O upload foi realizado com sucesso</sub-msg>"
         ), style=style_ok)
     else:
-        spinner.stop()
         print_formatted_text(HTML(
             u"<b>></b> <msg>Erro</msg> <sub-msg>Erro ao fazer o upload para a pasta</sub-msg>"
         ), style=style_fail)
@@ -164,15 +158,13 @@ def export(path: str, upload_folder: str):
 @account.command()
 @click.option('-p', '--path', help='Pasta para onde os segredos serão movidos',
               required=True, type=str, default="Documentos")
-@click.option('-df', '--download_folder', help='Url da pasta no drive da onde será feito o download',
-              required=True, type=str)
+@click.option('-df', '--download_folder', help='Url da pasta no drive da onde será feito o download', type=str)
 def importcsv(path: str, download_folder: str):
-    spinner = yaspin(text='Importando...', color='cyan')
-    spinner.start()
     app_path = os.path.dirname(__file__)
 
     reset_all()
-    download(download_folder)
+    manage = ManageCloud()
+    manage.download_file()
     try:
         shutil.move(
             os.path.join(os.path.join(os.path.expanduser('~'), path, 'secret.key')),
@@ -195,14 +187,16 @@ def importcsv(path: str, download_folder: str):
             create_account_csv(name=d[1], email=d[2], password=d[3])
 
     except Exception as e:
-        spinner.stop()
         print_formatted_text(HTML(
             u"<b>></b> <msg>Erro</msg> <sub-msg>Erro ao importar: {}</sub-msg>".format(e.args[1])
         ), style=style_fail)
     finally:
-        spinner.stop()
         os.remove('accounts.txt')
         os.remove('accounts.csv')
+        shutil.move(
+            os.path.join(os.path.dirname(__file__), 'secret_file.key'),
+            os.path.join(os.path.join(os.path.expanduser('~'), path, 'secret_file.key'))
+        )
 
 
 @account.command()
