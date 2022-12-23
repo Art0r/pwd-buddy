@@ -22,6 +22,8 @@ style_fail = Style.from_dict({
     'sub-msg': '#FE8787 italic'
 })
 
+APP_PATH = os.path.dirname(__file__)
+
 
 @click.group()
 def account():
@@ -106,9 +108,7 @@ def delete(name: str, email: str):
 @account.command()
 @click.option('-p', '--path', help='Pasta para onde os segredos serão movidos',
               required=True, type=str, default="Documentos")
-@click.option('-uf', '--upload_folder', help='Url da pasta no drive para onde será feito o upload',
-              required=True, type=str)
-def export(path: str, upload_folder: str):
+def export(path: str):
     columns = [column.key for column in Account.__table__.columns]
     accounts = get_all_accounts_to_export()
     if not accounts:
@@ -119,7 +119,7 @@ def export(path: str, upload_folder: str):
     output = ""
     key = Fernet.generate_key()
     f = Fernet(key)
-    with open('accounts.txt', 'wb') as file:
+    with open(os.path.join(APP_PATH, 'accounts.txt'), 'wb') as file:
         output += ','.join(columns)
         for acc in accounts:
             output += '\n{}'.format(','.join(str(field) for field in acc))
@@ -128,17 +128,17 @@ def export(path: str, upload_folder: str):
         file.close()
     manage = ManageCloud()
     result = manage.delete_all_then_upload()
-    os.remove('accounts.txt')
-    with open('secret_file.key', 'wb') as file:
+    os.remove(os.path.join(APP_PATH, 'accounts.txt'))
+    with open(os.path.join(APP_PATH, 'secret_file.key'), 'wb') as file:
         file.write(key)
         file.close()
     try:
         shutil.move(
-            os.path.join(os.path.dirname(__file__), 'secret.key'),
+            os.path.join(APP_PATH, 'secret.key'),
             os.path.join(os.path.join(os.path.expanduser('~'), path, 'secret.key'))
         )
         shutil.move(
-            os.path.join(os.path.dirname(__file__), 'secret_file.key'),
+            os.path.join(APP_PATH, 'secret_file.key'),
             os.path.join(os.path.join(os.path.expanduser('~'), path, 'secret_file.key'))
         )
     except Exception as e:
@@ -158,10 +158,7 @@ def export(path: str, upload_folder: str):
 @account.command()
 @click.option('-p', '--path', help='Pasta para onde os segredos serão movidos',
               required=True, type=str, default="Documentos")
-@click.option('-df', '--download_folder', help='Url da pasta no drive da onde será feito o download', type=str)
-def importcsv(path: str, download_folder: str):
-    app_path = os.path.dirname(__file__)
-
+def importcsv(path: str):
     reset_all()
     manage = ManageCloud()
     manage.download_file()
@@ -175,14 +172,14 @@ def importcsv(path: str, download_folder: str):
             os.path.join(os.path.dirname(__file__), 'secret_file.key')
         )
 
-        txt = open('accounts.txt', 'rb').read()
-        secret_file = open('secret_file.key', 'rb').read()
+        txt = open(os.path.join(APP_PATH, 'accounts.txt'), 'rb').read()
+        secret_file = open(os.path.join(APP_PATH, 'secret_file.key'), 'rb').read()
         f = Fernet(secret_file)
         dec = f.decrypt(txt)
-        with open('accounts.csv', 'w') as file:
+        with open(os.path.join(APP_PATH, 'accounts.csv'), 'w') as file:
             file.write(dec.decode('latin1'))
             file.close()
-        data = pd.read_csv(os.path.join(app_path, 'accounts.csv'))
+        data = pd.read_csv(os.path.join(APP_PATH, 'accounts.csv'))
         for d in data.values:
             create_account_csv(name=d[1], email=d[2], password=d[3])
 
@@ -191,10 +188,10 @@ def importcsv(path: str, download_folder: str):
             u"<b>></b> <msg>Erro</msg> <sub-msg>Erro ao importar: {}</sub-msg>".format(e.args[1])
         ), style=style_fail)
     finally:
-        os.remove('accounts.txt')
-        os.remove('accounts.csv')
+        os.remove(os.path.join(APP_PATH, 'accounts.txt'))
+        os.remove(os.path.join(APP_PATH, 'accounts.csv'))
         shutil.move(
-            os.path.join(os.path.dirname(__file__), 'secret_file.key'),
+            os.path.join(APP_PATH, 'secret_file.key'),
             os.path.join(os.path.join(os.path.expanduser('~'), path, 'secret_file.key'))
         )
 

@@ -1,13 +1,8 @@
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
-from pydrive.files import FileNotUploadedError
 from dropbox import DropboxOAuth2FlowNoRedirect
 from dropbox.exceptions import ApiError, AuthError
 from prompt_toolkit.styles import Style
 from prompt_toolkit import HTML, print_formatted_text
-from functools import wraps
 import dropbox
-import shutil
 import os
 
 from yaspin import yaspin
@@ -21,6 +16,7 @@ style_fail = Style.from_dict({
     'msg': '#FF0000 bold',
     'sub-msg': '#FE8787 italic'
 })
+
 
 class AuthCloud:
     _APP_KEY: str
@@ -56,6 +52,7 @@ class ManageCloud:
 
     @AuthCloud
     def delete_all_then_upload(self, access_token: str):
+        app_path = os.path.dirname(__file__)
         dbx = dropbox.Dropbox(oauth2_access_token=access_token)
         # dbx.users_get_current_account()
         # print("Successfully set up client!")
@@ -66,7 +63,7 @@ class ManageCloud:
             try:
                 spinner = yaspin(text='Exportando...', color='cyan')
                 spinner.start()
-                txt = open('./accounts.txt', 'rb').read()
+                txt = open(os.path.join(app_path, 'accounts.txt'), 'rb').read()
                 dbx.files_upload(txt, '/accounts.txt')
                 spinner.stop()
                 return True
@@ -74,9 +71,9 @@ class ManageCloud:
                 print(e.args[1])
                 return False
 
-
     @AuthCloud
     def download_file(self, access_token: str):
+        app_path = os.path.dirname(__file__)
         dbx = dropbox.Dropbox(oauth2_access_token=access_token)
         spinner = yaspin(text='Importando...', color='cyan')
         spinner.start()
@@ -88,7 +85,7 @@ class ManageCloud:
                     u"<b>></b> <msg>Erro</msg> <sub-msg>Erro fazer o download</sub-msg>"
                 ), style=style_fail)
             else:
-                file = open('accounts.txt', 'wb')
+                file = open(os.path.join(app_path, 'accounts.txt'), 'wb')
                 file.write(res.content)
                 spinner.stop()
         except ApiError as e:
