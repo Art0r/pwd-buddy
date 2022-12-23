@@ -2,6 +2,7 @@ from dropbox import DropboxOAuth2FlowNoRedirect
 from dropbox.exceptions import ApiError, AuthError
 from prompt_toolkit.styles import Style
 from prompt_toolkit import HTML, print_formatted_text
+from config import APP_PATH
 import dropbox
 import os
 
@@ -52,28 +53,28 @@ class ManageCloud:
 
     @AuthCloud
     def delete_all_then_upload(self, access_token: str):
-        app_path = os.path.dirname(__file__)
         dbx = dropbox.Dropbox(oauth2_access_token=access_token)
-        # dbx.users_get_current_account()
-        # print("Successfully set up client!")
-
         try:
-            dbx.files_delete_v2('/accounts.txt')
-        except:
+            files = dbx.files_list_folder('')
+            for file in files.entries:
+                if file.name == 'accounts.txt':
+                    dbx.files_delete_v2('/accounts.txt')
             try:
                 spinner = yaspin(text='Exportando...', color='cyan')
                 spinner.start()
-                txt = open(os.path.join(app_path, 'accounts.txt'), 'rb').read()
+                txt = open(os.path.join(APP_PATH, 'accounts.txt'), 'rb').read()
                 dbx.files_upload(txt, '/accounts.txt')
                 spinner.stop()
                 return True
             except ApiError as e:
                 print(e.args[1])
                 return False
+        except ApiError as e:
+            print(e.args[1])
+            return False
 
     @AuthCloud
     def download_file(self, access_token: str):
-        app_path = os.path.dirname(__file__)
         dbx = dropbox.Dropbox(oauth2_access_token=access_token)
         spinner = yaspin(text='Importando...', color='cyan')
         spinner.start()
@@ -85,7 +86,7 @@ class ManageCloud:
                     u"<b>></b> <msg>Erro</msg> <sub-msg>Erro fazer o download</sub-msg>"
                 ), style=style_fail)
             else:
-                file = open(os.path.join(app_path, 'accounts.txt'), 'wb')
+                file = open(os.path.join(APP_PATH, 'accounts.txt'), 'wb')
                 file.write(res.content)
                 spinner.stop()
         except ApiError as e:

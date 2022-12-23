@@ -6,10 +6,10 @@ from sqlalchemy import Integer, String, Column, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from gen import generate_password
-from cripto import Crypt
+from src.utils.generate_password import generate_password
+from src.utils.this_cryptography import Crypt
+from config import APP_PATH
 
-APP_PATH = os.path.dirname(__file__)
 engine = db.create_engine(f"sqlite:///{os.path.join(APP_PATH, 'pwd-buddy.db')}")
 connection = engine.connect()
 Base = declarative_base(metadata=MetaData(engine))
