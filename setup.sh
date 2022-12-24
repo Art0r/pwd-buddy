@@ -1,5 +1,4 @@
 #!/usr/bin/zsh
-
 APP_PATH="$HOME/.local/share/pwd-buddy"
 
 if [[ -d $APP_PATH ]]
@@ -8,7 +7,7 @@ then
 fi
 
 mkdir "$APP_PATH"
-chmod u+x account.py
+#chmod u+x account.py
 #python - << EOF
 #from account import reset_and_import
 #reset_and_import()
@@ -17,3 +16,4 @@ chmod u+x account.py
 # --add-data "settings.yaml:." main.py --name pwd-buddy
 pyinstaller --windowed main.py --name pwd-buddy
 cp -r ./dist/pwd-buddy/* "$APP_PATH"
+cp .env "$APP_PATH"
