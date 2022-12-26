@@ -7,13 +7,6 @@ then
 fi
 
 mkdir "$APP_PATH"
-#chmod u+x account.py
-#python - << EOF
-#from account import reset_and_import
-#reset_and_import()
-#EOF
-#pyinstaller --windowed --add-data "client_secret.json:." \
-# --add-data "settings.yaml:." main.py --name pwd-buddy
-pyinstaller --windowed main.py --name pwd-buddy
+pyinstaller -w main.py --name pwd-buddy --icon="./static/key.ico"
 cp -r ./dist/pwd-buddy/* "$APP_PATH"
 cp .env "$APP_PATH"

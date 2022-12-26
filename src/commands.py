@@ -10,10 +10,7 @@ from prompt_toolkit.styles import Style
 from prompt_toolkit import HTML, print_formatted_text
 from yaspin import yaspin
 from cryptography.fernet import Fernet
-from config import APP_PATH
-
-ACCOUNTS_TXT = os.path.join(APP_PATH, 'accounts.txt')
-ACCOUNTS_CSV = os.path.join(APP_PATH, 'accounts.csv')
+from config import APP_PATH, ACCOUNTS_TXT, ACCOUNTS_CSV, SECRET_FILE, SECRET
 
 style_ok = Style.from_dict({
     'msg': '#50FC00 bold',
@@ -39,7 +36,7 @@ def getall():
     results = get_all_accounts()
     if results:
         spinner.stop()
-        click.echo(tabulate(results, headers=columns, tablefmt='fancy_grid'))
+        click.echo(tabulate(results, headers=columns, tablefmt='grid'))
     else:
         spinner.stop()
         print_formatted_text(HTML(
@@ -58,7 +55,7 @@ def getone(name: str):
     results = get_account(name)
     if results:
         spinner.stop()
-        click.echo(tabulate(results, headers=columns, tablefmt='fancy_grid'))
+        click.echo(tabulate(results, headers=columns, tablefmt='grid'))
     else:
         spinner.stop()
         print_formatted_text(HTML(
@@ -80,7 +77,7 @@ def create(name: str, email: str):
         print_formatted_text(HTML(
             u"<b>></b> <msg>OK</msg> <sub-msg>A conta foi cadastrada com sucesso</sub-msg>"
         ), style=style_ok)
-        click.echo(tabulate(result, headers=columns, tablefmt='fancy_grid'))
+        click.echo(tabulate(result, headers=columns, tablefmt='grid'))
     else:
         spinner.stop()
         print_formatted_text(HTML(
@@ -150,11 +147,11 @@ def export(path: str):
     try:
         shutil.move(
             os.path.join(APP_PATH, 'secret.key'),
-            os.path.join(os.path.join(os.path.expanduser('~'), path, 'secret.key'))
+            os.path.join(SECRET)
         )
         shutil.move(
             os.path.join(APP_PATH, 'secret_file.key'),
-            os.path.join(os.path.join(os.path.expanduser('~'), path, 'secret_file.key'))
+            os.path.join(SECRET_FILE)
         )
     except Exception as e:
         print_formatted_text(HTML(
@@ -171,11 +168,11 @@ def importcsv(path: str):
     manage.download_file()
     try:
         shutil.move(
-            os.path.join(os.path.join(os.path.expanduser('~'), path, 'secret.key')),
+            os.path.join(SECRET),
             os.path.join(APP_PATH, 'secret.key')
         )
         shutil.move(
-            os.path.join(os.path.join(os.path.expanduser('~'), path, 'secret_file.key')),
+            os.path.join(SECRET_FILE),
             os.path.join(APP_PATH, 'secret_file.key')
         )
 

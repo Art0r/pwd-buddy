@@ -1,3 +1,4 @@
+# Python3.10.6
 from src.commands import account
 from dotenv import load_dotenv
 
