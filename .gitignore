@@ -130,3 +130,5 @@ dmypy.json
 *.db
 *.key
 .idea
+testando_coisas.py
+*.csv
