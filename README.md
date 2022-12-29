@@ -14,5 +14,7 @@ Installing project with python.
   ./setup.sh
   # wait for setup to finish
   cd ~ && rm -rf ~/pwd-buddy/
+  # if you use bash instead of zsh, change ~/.zshrc to ~/.bashrc
+  echo export PATH='$HOME/.local/share/pwd-buddy:$PATH' >> ~/.zshrc
 ```
     
