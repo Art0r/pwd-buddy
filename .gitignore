@@ -131,4 +131,3 @@ dmypy.json
 .idea
 testando_coisas.py
 *.csv
-# .env

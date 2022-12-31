@@ -2,7 +2,7 @@ from dropbox import DropboxOAuth2FlowNoRedirect
 from dropbox.exceptions import ApiError, AuthError
 from prompt_toolkit.styles import Style
 from prompt_toolkit import HTML, print_formatted_text
-from config import APP_PATH, APP_KEY, APP_SECRET
+from config import APP_PATH
 import dropbox
 import os
 

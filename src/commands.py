@@ -95,8 +95,7 @@ def delete(name: str, email: str):
     if result:
         spinner.stop()
         print_formatted_text(HTML(
-            u"<b>></b> <msg>OK</msg> <sub-msg>A conta foi deletada com sucesso"
-            u" para ser retornada</sub-msg>"
+            u"<b>></b> <msg>OK</msg> <sub-msg>A conta foi deletada com sucesso</sub-msg>"
         ), style=style_ok)
     else:
         spinner.stop()
