@@ -18,4 +18,3 @@ fi
 mkdir "$APP_PATH"
 pyinstaller -w main.py --name pwd-buddy --icon="./static/key.ico"
 cp -r ./dist/pwd-buddy/* "$APP_PATH"
-cp .env "$APP_PATH"
